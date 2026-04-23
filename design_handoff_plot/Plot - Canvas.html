@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=1600"/>
+<title>Plot — Collaborative Whiteboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tokens.css"/>
+<style>
+  html, body { height: 100%; }
+  body { background: #f0eee9; }
+</style>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="components/icons.jsx"></script>
+<script type="text/babel" src="components/entry.jsx"></script>
+<script type="text/babel" src="components/dashboard.jsx"></script>
+<script type="text/babel" src="components/workspace.jsx"></script>
+<script type="text/babel" src="components/design-system.jsx"></script>
+
+<script type="text/babel">
+// Frame wrappers to render each screen at a fixed artboard size
+const Frame = ({ w = 1440, h = 900, children, background = 'var(--canvas)' }) => (
+  <div style={{ width: w, height: h, background, overflow: 'hidden', position: 'relative' }}>{children}</div>
+);
+
+function App() {
+  return (
+    <DesignCanvas>
+      <DCSection id="entry" title="Entry screen" subtitle="Name capture · Aurora">
+        <DCArtboard id="entry-aurora" label="Aurora (soft gradient + noise)" width={1440} height={900}>
+          <Frame><EntryScreen mood="aurora"/></Frame>
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="dashboard" title="Boards dashboard" subtitle="Library, search, filters, live thumbnails">
+        <DCArtboard id="dash-default" label="Boards grid" width={1440} height={900}>
+          <Frame><Dashboard /></Frame>
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="workspace" title="Workspace" subtitle="Try drawing — canvas, toolbar, live cursors · light & dark">
+        <DCArtboard id="ws-light" label="Light — active canvas" width={1440} height={900}>
+          <Frame><Workspace dark={false}/></Frame>
+        </DCArtboard>
+        <DCArtboard id="ws-dark" label="Dark — focus mode" width={1440} height={900}>
+          <Frame background="#0E0E0C"><Workspace dark={true}/></Frame>
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="modals" title="Modals" subtitle="Share / permissions and Export">
+        <DCArtboard id="modal-share" label="Share & permissions" width={1440} height={900}>
+          <Frame>
+            <Workspace dark={false} />
+            <ShareModalOverlay />
+          </Frame>
+        </DCArtboard>
+        <DCArtboard id="modal-export" label="Export" width={1440} height={900}>
+          <Frame>
+            <Workspace dark={false} />
+            <ExportModalOverlay />
+          </Frame>
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="system" title="Design system" subtitle="Tokens, primitives, motion">
+        <DCArtboard id="ds-full" label="Full design system" width={1440} height={1800}>
+          <Frame h={1800}><DesignSystem /></Frame>
+        </DCArtboard>
+      </DCSection>
+    </DesignCanvas>
+  );
+}
+
+// Always-visible modal variants (don't dismiss on outside click inside DC)
+function ShareModalOverlay() {
+  return (
+    <div style={{ position: 'absolute', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(10,10,10,0.35)', backdropFilter: 'blur(6px)' }}>
+      <div style={{ width: 720, maxWidth: 'calc(100% - 40px)', background: 'var(--paper)', borderRadius: 14, boxShadow: 'var(--shadow-4)', overflow: 'hidden', border: '1px solid var(--border)' }}>
+        <ShareModalInner />
+      </div>
+    </div>
+  );
+}
+function ExportModalOverlay() {
+  return (
+    <div style={{ position: 'absolute', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(10,10,10,0.35)', backdropFilter: 'blur(6px)' }}>
+      <div style={{ width: 560, maxWidth: 'calc(100% - 40px)', background: 'var(--paper)', borderRadius: 14, boxShadow: 'var(--shadow-4)', overflow: 'hidden', border: '1px solid var(--border)' }}>
+        <ExportModalInner />
+      </div>
+    </div>
+  );
+}
+
+// Re-implement modal contents so we can embed without onClose flicker
+const ShareModalInner = () => {
+  const [role, setRole] = React.useState('Editor');
+  const users = [
+    { name: 'Nina Petrov', color: 'var(--user-coral)', email: 'nina@plot.dev', role: 'Manager', you: true },
+    { name: 'Ira Kolesnik', color: 'var(--user-mint)', email: 'ira@plot.dev', role: 'Editor' },
+    { name: 'Dan Pike', color: 'var(--user-amber)', email: 'dan@plot.dev', role: 'Editor' },
+    { name: 'Yu Chen', color: 'var(--user-sky)', email: 'yu@plot.dev', role: 'Viewer' },
+  ];
+  return (
+    <>
+      <div style={{ padding: '24px 28px 0' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+          <h2 style={{ margin: 0, fontSize: 20, fontWeight: 600, letterSpacing: '-0.015em' }}>Share board</h2>
+          <button style={{ width: 28, height: 28, borderRadius: 14, border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--ink-4)' }}><Icon name="x" size={16}/></button>
+        </div>
+        <div style={{ fontSize: 13, color: 'var(--ink-4)' }}>Anyone with the link can join instantly — no signup.</div>
+      </div>
+      <div style={{ padding: '20px 28px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+        <div>
+          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--ink-4)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 8 }}>Public link</div>
+          <div style={{ display: 'flex', gap: 6 }}>
+            <div style={{ flex: 1, padding: '9px 12px', background: 'var(--ink-9)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13, color: 'var(--ink-2)', fontFamily: 'var(--font-mono)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>plot.so/b/q2-planning</div>
+            <button className="btn btn-outline"><Icon name="copy" size={14}/>Copy</button>
+          </div>
+          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--ink-4)', letterSpacing: '0.06em', textTransform: 'uppercase', marginTop: 22, marginBottom: 8 }}>Default role</div>
+          <div style={{ display: 'flex', gap: 0, padding: 4, background: 'var(--ink-9)', borderRadius: 8, border: '1px solid var(--border)' }}>
+            {['Viewer', 'Editor', 'Manager'].map(r => (
+              <button key={r} onClick={() => setRole(r)} style={{ flex: 1, padding: '7px 10px', border: 'none', borderRadius: 6, background: role === r ? 'var(--paper)' : 'transparent', color: role === r ? 'var(--ink-0)' : 'var(--ink-3)', fontWeight: role === r ? 600 : 400, fontSize: 13, cursor: 'pointer', boxShadow: role === r ? 'var(--shadow-1)' : 'none' }}>{r}</button>
+            ))}
+          </div>
+          <div style={{ marginTop: 8, fontSize: 12, color: 'var(--ink-4)' }}>Can draw, add pages, and manage content.</div>
+          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--ink-4)', letterSpacing: '0.06em', textTransform: 'uppercase', marginTop: 22, marginBottom: 10 }}>Granular permissions</div>
+          {[{l:'Can add pages',on:true},{l:'Can delete pages',on:false},{l:'Can manage permissions',on:false},{l:'Can export',on:true}].map(t => (
+            <div key={t.l} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 0', fontSize: 13.5, color: 'var(--ink-1)', borderBottom: '1px solid var(--border)' }}>
+              <span>{t.l}</span>
+              <Toggle initial={t.on}/>
+            </div>
+          ))}
+        </div>
+        <div>
+          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--ink-4)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 8 }}>People with access</div>
+          <div style={{ border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden' }}>
+            {users.map((u, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderBottom: i < users.length - 1 ? '1px solid var(--border)' : 'none', background: u.you ? 'var(--ink-9)' : 'transparent' }}>
+                <Avatar name={u.name} color={u.color} size={32} ring={false}/>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13.5, fontWeight: 500 }}>{u.name} {u.you && <span style={{ fontSize: 11, color: 'var(--ink-4)', fontWeight: 400 }}>(you)</span>}</div>
+                  <div style={{ fontSize: 12, color: 'var(--ink-4)' }}>{u.email}</div>
+                </div>
+                <select defaultValue={u.role} style={{ border: '1px solid var(--border)', background: 'var(--paper)', borderRadius: 6, padding: '5px 8px', fontSize: 12.5, color: 'var(--ink-2)', fontFamily: 'inherit', cursor: 'pointer' }}>
+                  <option>Viewer</option><option>Editor</option><option>Manager</option>
+                </select>
+              </div>
+            ))}
+          </div>
+          <div style={{ marginTop: 12, fontSize: 12, color: 'var(--ink-4)' }}>4 people · 2 active now</div>
+        </div>
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, padding: '16px 28px', borderTop: '1px solid var(--border)', background: 'var(--ink-9)' }}>
+        <button className="btn btn-ghost">Cancel</button>
+        <button className="btn btn-primary">Done</button>
+      </div>
+    </>
+  );
+};
+
+const ExportModalInner = () => {
+  const [fmt, setFmt] = React.useState('JPEG');
+  const [quality, setQuality] = React.useState(92);
+  const [scope, setScope] = React.useState('current');
+  return (
+    <>
+      <div style={{ padding: '24px 28px 0' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+          <h2 style={{ margin: 0, fontSize: 20, fontWeight: 600, letterSpacing: '-0.015em' }}>Export</h2>
+          <button style={{ width: 28, height: 28, borderRadius: 14, border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--ink-4)' }}><Icon name="x" size={16}/></button>
+        </div>
+        <div style={{ fontSize: 13, color: 'var(--ink-4)' }}>Download your board as an image.</div>
+      </div>
+      <div style={{ padding: '20px 28px' }}>
+        <div style={{ background: 'var(--ink-9)', borderRadius: 10, padding: 16, marginBottom: 20, border: '1px solid var(--border)' }}>
+          <div style={{ aspectRatio: '16/9', background: '#FDFBF4', borderRadius: 6, border: '1px solid var(--border)', position: 'relative', overflow: 'hidden' }} className="dot-grid">
+            <svg viewBox="0 0 400 225" style={{ width: '100%', height: '100%' }}>
+              <rect x="60" y="40" width="120" height="60" rx="4" fill="#FFE8E4" stroke="#FF6B5B"/>
+              <rect x="220" y="50" width="100" height="50" rx="4" fill="#E7F7EE" stroke="#4FD1A5"/>
+              <line x1="180" y1="70" x2="220" y2="75" stroke="#44443F" strokeWidth="1"/>
+              <rect x="80" y="140" width="70" height="60" fill="#FEF2DA" transform="rotate(-3 115 170)"/>
+              <path d="M 260 140 Q 300 180 340 150" stroke="#9B7BFF" strokeWidth="2" fill="none"/>
+            </svg>
+          </div>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--ink-4)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 8 }}>Format</div>
+            <div style={{ display: 'flex', gap: 0, padding: 4, background: 'var(--ink-9)', borderRadius: 8, border: '1px solid var(--border)' }}>
+              {['JPEG', 'PNG'].map(f => (
+                <button key={f} onClick={() => setFmt(f)} style={{ flex: 1, padding: '7px 10px', border: 'none', borderRadius: 6, background: fmt === f ? 'var(--paper)' : 'transparent', color: fmt === f ? 'var(--ink-0)' : 'var(--ink-3)', fontWeight: fmt === f ? 600 : 400, fontSize: 13, cursor: 'pointer', boxShadow: fmt === f ? 'var(--shadow-1)' : 'none' }}>{f}</button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--ink-4)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 8 }}>Scope</div>
+            <div style={{ display: 'flex', gap: 0, padding: 4, background: 'var(--ink-9)', borderRadius: 8, border: '1px solid var(--border)' }}>
+              {[{id:'current',label:'Current page'},{id:'all',label:'All pages'}].map(s => (
+                <button key={s.id} onClick={() => setScope(s.id)} style={{ flex: 1, padding: '7px 10px', border: 'none', borderRadius: 6, background: scope === s.id ? 'var(--paper)' : 'transparent', color: scope === s.id ? 'var(--ink-0)' : 'var(--ink-3)', fontWeight: scope === s.id ? 600 : 400, fontSize: 13, cursor: 'pointer', boxShadow: scope === s.id ? 'var(--shadow-1)' : 'none' }}>{s.label}</button>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div style={{ marginTop: 18 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+            <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--ink-4)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Quality</span>
+            <span style={{ fontSize: 12, color: 'var(--ink-3)', fontFamily: 'var(--font-mono)' }}>{quality}%</span>
+          </div>
+          <input type="range" min="30" max="100" value={quality} onChange={e => setQuality(parseInt(e.target.value))} style={{ width: '100%', accentColor: 'var(--accent)' }}/>
+        </div>
+        <div style={{ marginTop: 20, padding: '12px 14px', background: 'var(--ink-9)', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 10, fontSize: 12.5, color: 'var(--ink-3)' }}>
+          <Icon name="image" size={15} color="var(--ink-4)"/>
+          <span>Estimated size: <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--ink-1)' }}>{(quality * 0.018 + 0.6).toFixed(1)} MB</span> · 1920×1080</span>
+        </div>
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, padding: '16px 28px', borderTop: '1px solid var(--border)', background: 'var(--ink-9)' }}>
+        <button className="btn btn-ghost">Cancel</button>
+        <button className="btn btn-accent"><Icon name="download" size={14}/>Download</button>
+      </div>
+    </>
+  );
+};
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>

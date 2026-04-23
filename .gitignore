@@ -1,0 +1,41 @@
+# ---------- .NET ----------
+bin/
+obj/
+*.user
+*.suo
+*.userprefs
+*.rsuser
+
+# ---------- SQLite dev database ----------
+*.db
+*.db-shm
+*.db-wal
+
+# ---------- Node / Vite ----------
+node_modules/
+dist/
+client/dist/
+iTransitionTask6/wwwroot/dist/
+.vite/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+.env
+.env.local
+.env.*.local
+
+# ---------- IDE ----------
+.idea/
+.vs/
+.vscode/
+
+# ---------- OS ----------
+.DS_Store
+Thumbs.db
+
+# ---------- Fly.io / deploy ----------
+.fly/
+
+# ---------- Agent / session state ----------
+.claude/
+*.stackdump

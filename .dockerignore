@@ -1,0 +1,32 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# IDE
+.vs
+.vscode
+.idea
+*.suo
+*.user
+
+# Build artefacts — the Dockerfile rebuilds everything from source
+**/bin
+**/obj
+**/node_modules
+client/dist
+iTransitionTask6/wwwroot/dist
+
+# Local dev state
+*.db
+*.db-shm
+*.db-wal
+.env
+.env.local
+.env.development
+.env.production
+
+# Docs / extras not needed in the image
+README.md
+design_handoff_plot
+memory
