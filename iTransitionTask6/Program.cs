@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Plot.Api;
 using Plot.Data;
 using Plot.Hubs;
@@ -51,6 +52,8 @@ builder.Services.AddDbContext<PlotDbContext>(options =>
     {
         options.UseSqlite(connectionString);
     }
+
+    options.ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning));
 });
 
 builder.Services.AddSignalR(options =>
@@ -79,7 +82,7 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<PlotDbContext>();
-    await db.Database.MigrateAsync();
+    await db.Database.EnsureCreatedAsync();
 
     if (provider.Equals(ProviderSqlite, StringComparison.OrdinalIgnoreCase))
     {
